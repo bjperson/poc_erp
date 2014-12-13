@@ -45,3 +45,8 @@ input[type="submit"] {
 .share {
   padding-left: 10px;
 }
+.dscale {
+  background-color: #fff;
+  padding-left: 5px;
+  padding-right: 5px;
+}

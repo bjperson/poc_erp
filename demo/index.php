@@ -45,7 +45,16 @@
           attributionControl : false
         });
         
-        cattribution = new L.control.attribution({"position": 'bottomright', prefix: false}).addTo(map);
+        cattribution = new L.control.attribution({"position": 'bottomleft', prefix: false}).addTo(map);
+        
+        var dscale = L.control({position: 'bottomright'});
+        dscale.onAdd = function (map) {
+          var div = L.DomUtil.create('div', 'dscale');
+          div.innerHTML = 'Echelle 1:'+getScaleDenominator();
+          return div;
+        };
+        dscale.addTo(map);
+        
         cscale = L.control.scale({"position": 'bottomright', "imperial": false, "updateWhenIdle": true}).addTo(map);
         czoom = L.control.zoom({"position": 'bottomright'}).addTo(map);
         
@@ -54,7 +63,8 @@
             minZoom: 1,
             maxZoom: 19,
             fn: getIgnAttributions,
-            layername: 'Photographies aériennes',
+            name: 'Photographies aériennes',
+            layername: 'ORTHOIMAGERY.ORTHOPHOTOS',
             attribution: '© <a href="http://www.geoportail.gouv.fr/">Géoportail</a>'
           }), '', 2);
         
@@ -64,7 +74,8 @@
             maxZoom: 19,
             opacity: 0.6,
             fn: getIgnAttributions,
-            layername: 'Réseaux de transports (Ferré)',
+            name: 'Réseaux de transports (Ferré)',
+            layername: 'TRANSPORTNETWORKS.RAILWAYS',
             attribution: '© <a href="http://www.geoportail.gouv.fr/">Géoportail</a>'
           }), '', 2);
     
@@ -74,7 +85,8 @@
             maxZoom: 19,
             opacity: 0.6,
             fn: getIgnAttributions,
-            layername: 'Réseaux de transports (Routier)',
+            name: 'Réseaux de transports (Routier)',
+            layername: 'TRANSPORTNETWORKS.ROADS',
             attribution: '© <a href="http://www.geoportail.gouv.fr/">Géoportail</a>'
           }), '', 2);
           
@@ -84,8 +96,9 @@
             opacity: 0.6,
             maxZoom: 16,
             minZoom: 1,
-            layername: 'Population (carroyage)',
-            attribution: '<a href="http://www.insee.fr/fr/themes/detail.asp?reg_id=0&ref_id=donnees-carroyees&page=donnees-detaillees/donnees-carroyees/donnees_carroyees_diffusion.htm">INSEE</a>'
+            name: 'Population (carroyage)',
+            layername: 'population',
+            attribution: '<a href="http://www.insee.fr/fr/themes/detail.asp?reg_id=0&ref_id=donnees-carroyees&page=donnees-detaillees/donnees-carroyees/donnees_carroyees_diffusion.htm" title="Population : Données carroyées INSEE">INSEE</a>'
           }), '', 20);
           
         map.on('layeradd', function(e) {
@@ -102,6 +115,10 @@
               this.options.fn(e);
             });
           }
+        });
+          
+        map.on('viewreset', function(e) {
+          setScaleDenominator();
         });
         
         allLayers['orthophotos_ign'][0].addTo(map);
@@ -136,6 +153,10 @@
         realworldpx = realworldm / size.x;
         scaleDenominator = Math.round(realworldpx / 0.00028);
         return scaleDenominator;
+      }
+      
+      function setScaleDenominator() {
+        $('.dscale').html('Echelle 1:'+getScaleDenominator());
       }
 
       ignattributions = false;
@@ -221,27 +242,36 @@
         }
 
         currentscale = getScaleDenominator();
-        console.log('Date : '+ignattributions.timestamp+' ; ScaleDenominator : '+currentscale);
-
+        //console.log('Date : '+ignattributions.timestamp+' ; ScaleDenominator : '+currentscale);
+        //console.log(this.layername);
+        
+        newAttribution = new Array();
         for (i in ignattributions.rules) {
-          attribution = '<a href="'+ignattributions.rules[i].url+'" title="'+ignattributions.rules[i].title+'" class="'+ignattributions.rules[i].layer+'">'+ignattributions.rules[i].nom+'</a>';
+        
+          attribution = '<a href="'+ignattributions.rules[i].url+'" title="'+this.name+' : '+ignattributions.rules[i].title+'" class="'+ignattributions.rules[i].layer+'">'+ignattributions.rules[i].nom+'</a>';
           
           if(ignattributions.rules[i].layer == this.layername && currentscale >= ignattributions.rules[i].minscale && currentscale <= ignattributions.rules[i].maxscale) {
             if(map.getBounds().intersects(ignattributions.rules[i].bbox)) {
-              cattribution.addAttribution(attribution);
-              console.log('Plus '+ignattributions.rules[i].nom+' : '+ignattributions.rules[i].minscale+' <> '+ignattributions.rules[i].maxscale);
+              if($.inArray(attribution, newAttribution) === -1) {
+                newAttribution.push(attribution);
+              }
+              //console.log('Plus '+ignattributions.rules[i].nom+' : '+ignattributions.rules[i].minscale+' <> '+ignattributions.rules[i].maxscale);
             }
           }
-          else if(ignattributions.rules[i].layer == this.layername) {
-            delete cattribution._attributions[attribution];
-            console.log('Moins '+ignattributions.rules[i].nom+' : '+ignattributions.rules[i].minscale+' <> '+ignattributions.rules[i].maxscale);
+          else if(ignattributions.rules[i].layer == this.layername && (currentscale < ignattributions.rules[i].minscale || currentscale > ignattributions.rules[i].maxscale)) {
+            cattribution.removeAttribution(attribution);
+            //console.log('Moins '+ignattributions.rules[i].nom+' : '+ignattributions.rules[i].minscale+' <> '+ignattributions.rules[i].maxscale);
           }
           
           if(e.type == 'layerremove' && ignattributions.rules[i].layer == this.layername) {
-            delete cattribution._attributions[attribution];
+            // tester effectivité
+            cattribution.removeAttribution(attribution);
           }
         }
-        cattribution._update();
+        // ajouter toutes les attributions
+        for (i in newAttribution) {
+          cattribution.addAttribution(newAttribution[i]);
+        }
       }
       
       allLayers = []; var config; var datas = [];
