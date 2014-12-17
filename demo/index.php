@@ -14,6 +14,16 @@
     <![endif]-->
   </head>
   <body>
+    <nav id="top">
+      <a href="">Je-reçois-du-public.gouv.fr</a>
+      <ul>
+        <li><a href="#formulaire">Déclarer</a></li>
+        <li><a href="#map_canvas">S'authentifier / Créer un compte</a></li>
+        <li><a href="#map_canvas">Cartographie</a></li>
+        <li><a href="#map_canvas">À propos</a></li>
+      </ul>
+    </nav>
+    <div id="formulaire"></div>
     <div id="map_canvas"></div>
     <script src="js/leaflet.js"></script>
     <script src="js/jquery-1.11.1.min.js"></script>
@@ -38,26 +48,6 @@
       
       function initmap() {
         
-        map = L.map('map_canvas', {
-          center: [47.06129129529406, 4.655869150706053],
-          zoom: 6,
-          zoomControl: false,
-          attributionControl : false
-        });
-        
-        cattribution = new L.control.attribution({"position": 'bottomleft', prefix: false}).addTo(map);
-        
-        var dscale = L.control({position: 'bottomright'});
-        dscale.onAdd = function (map) {
-          var div = L.DomUtil.create('div', 'dscale');
-          div.innerHTML = 'Echelle 1:'+getScaleDenominator();
-          return div;
-        };
-        dscale.addTo(map);
-        
-        cscale = L.control.scale({"position": 'bottomright', "imperial": false, "updateWhenIdle": true}).addTo(map);
-        czoom = L.control.zoom({"position": 'bottomright'}).addTo(map);
-        
         allLayers['orthophotos_ign'] = new Array(
           L.tileLayer('http://gpp3-wxs.ign.fr/'+ignkey+'/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image%2Fjpeg', {
             minZoom: 1,
@@ -67,6 +57,17 @@
             layername: 'ORTHOIMAGERY.ORTHOPHOTOS',
             attribution: '© <a href="http://www.geoportail.gouv.fr/">Géoportail</a>'
           }), '', 2);
+        
+        allLayers['erp32'] = new Array(
+          L.tileLayer("http://www.ideeslibres.org/mapproxy/tiles/erp32_EPSG900913/{z}/{x}/{y}.png", {
+            tms: true,
+            opacity: 0.6,
+            maxZoom: 18,
+            minZoom: 1,
+            name: 'ERP du Gers (32)',
+            layername: 'erp32',
+            attribution: '<a href="http://catalogue.geo-ide.developpement-durable.gouv.fr/catalogue/apps/search/?uuid=fr-120066022-jdd-5fedeff4-9782-4d93-b0d4-063b2cc55c7d" title="Établissements recevant du public dans le Gers">DDT du Gers</a>'
+          }), '', 20);
         
         allLayers['rail_ign'] = new Array(
           L.tileLayer('http://gpp3-wxs.ign.fr/'+ignkey+'/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=TRANSPORTNETWORKS.RAILWAYS&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image%2Fpng', {
@@ -101,6 +102,47 @@
             attribution: '<a href="http://www.insee.fr/fr/themes/detail.asp?reg_id=0&ref_id=donnees-carroyees&page=donnees-detaillees/donnees-carroyees/donnees_carroyees_diffusion.htm" title="Population : Données carroyées INSEE">INSEE</a>'
           }), '', 20);
           
+        
+        map = L.map('map_canvas', {
+          center: [47.06129129529406, 4.655869150706053],
+          zoom: 6,
+          zoomControl: false,
+          attributionControl : false,
+          layers: [allLayers['orthophotos_ign'][0], allLayers['population'][0], allLayers['rail_ign'][0], allLayers['routes_ign'][0], allLayers['erp32'][0]]
+        });
+        /*
+        allLayers['orthophotos_ign'][0].addTo(map);
+        allLayers['population'][0].addTo(map);
+        allLayers['rail_ign'][0].addTo(map);
+        allLayers['routes_ign'][0].addTo(map);
+        */
+        
+        var baseMaps = {
+          
+        };
+
+        var overlayMaps = {
+          "Photographies aériennes": allLayers['orthophotos_ign'][0],
+          "Population": allLayers['population'][0],
+          "Réseaux routiers": allLayers['routes_ign'][0],
+          "Réseaux ferrés": allLayers['rail_ign'][0],
+          "ERP du Gers (32)": allLayers['erp32'][0]
+        };
+        
+        L.control.layers(baseMaps, overlayMaps).addTo(map);
+        
+        cattribution = new L.control.attribution({"position": 'bottomleft', prefix: false}).addTo(map);
+        
+        var dscale = L.control({position: 'bottomright'});
+        dscale.onAdd = function (map) {
+          var div = L.DomUtil.create('div', 'dscale');
+          div.innerHTML = 'Echelle 1:'+getScaleDenominator();
+          return div;
+        };
+        dscale.addTo(map);
+        
+        cscale = L.control.scale({"position": 'bottomright', "imperial": false, "updateWhenIdle": true}).addTo(map);
+        czoom = L.control.zoom({"position": 'bottomright'}).addTo(map);
         map.on('layeradd', function(e) {
           if (e.layer.options.fn) {
             e.layer.on('loading', function(e) {
@@ -111,7 +153,7 @@
           
         map.on('layerremove', function(e) {
           if (e.layer.options.fn) {
-            e.layer.off('loading', function(e) {
+            e.layer.off('load', function(e) {
               this.options.fn(e);
             });
           }
@@ -119,16 +161,35 @@
           
         map.on('viewreset', function(e) {
           setScaleDenominator();
+          setHashLink();
         });
-        
-        allLayers['orthophotos_ign'][0].addTo(map);
-        allLayers['population'][0].addTo(map);
-        allLayers['rail_ign'][0].addTo(map);
-        allLayers['routes_ign'][0].addTo(map);
     
         stopPropag();
+        loadFromHash();
       }
-    
+      
+      function loadFromHash() {
+        if(location.hash) {
+          hashvars = new Array();
+          hashes = location.hash.substring(1).split('&');
+          for (vars in hashes) {
+            v = hashes[vars].split('=');
+            hashvars[v[0]] = v[1];
+          }
+          if(hashvars.hasOwnProperty('bbox')) {
+            b = hashvars['bbox'].split(',');
+            var bounds = [[b[0], b[1]], [b[2], b[3]]];
+            map.fitBounds(bounds);
+          }
+        }
+      }
+
+      function setHashLink() {
+        box = map.getBounds();
+        hashes = 'bbox='+box._southWest.lat+','+box._southWest.lng+','+box._northEast.lat+','+box._northEast.lng;
+        window.location.hash = hashes;
+      }
+      
       function stopPropag() {
         $.each($('.leaflet-control'), function() {
           L.DomEvent.disableClickPropagation(this);

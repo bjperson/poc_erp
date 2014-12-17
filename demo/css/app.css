@@ -1,14 +1,17 @@
-html, body, #map_canvas {
+html, body {
   height: 100%;
   width: 100%;
   margin: 0;
   padding: 0;
   font-family: Arial, Helvetica, sans-serif;
+  background-color: gray;
 }
-.leaflet-top {
-  background-color: #FFFFFF;
-  border-bottom: 1px solid #DFDFDF;
+#map_canvas {
+  height: 500px;
   width: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
 }
 #table-container, .top-bar, #table-container table { width: 100%; }
 #table-container td { text-align: center; border-bottom: 10px solid #efefef; font-weight: bold; text-align: center; color: #818181; }
@@ -36,12 +39,6 @@ input[type="submit"] {
   font-weight: bold;
   text-shadow: 1px 1px 1px #8F8F8F;
 }
-.leaflet-left .leaflet-control {
-  margin-left: 0;
-}
-.leaflet-top .leaflet-control {
-  margin-top: 0;
-}
 .share {
   padding-left: 10px;
 }
@@ -50,3 +47,20 @@ input[type="submit"] {
   padding-left: 5px;
   padding-right: 5px;
 }
+
+#top {
+  height: 70px;
+  background: gray url("/img/logo_france.png") no-repeat scroll right 12px
+}
+#top ul {
+  height: 100%;
+  width: 100%;
+}
+#top li {
+  display: inline;
+  height: 100%;
+}
+#top li a {
+  height: 100%;
+}
+.leaflet-control-layers { border-radius: 2px; }
