@@ -101,14 +101,24 @@
             layername: 'population',
             attribution: '<a href="http://www.insee.fr/fr/themes/detail.asp?reg_id=0&ref_id=donnees-carroyees&page=donnees-detaillees/donnees-carroyees/donnees_carroyees_diffusion.htm" title="Population : Données carroyées INSEE">INSEE</a>'
           }), '', 20);
-          
+        
+        allLayers['risques32'] = new Array(
+          L.tileLayer("http://www.ideeslibres.org/mapproxy/tiles/risques32_EPSG900913/{z}/{x}/{y}.png", {
+            tms: true,
+            opacity: 0.6,
+            maxZoom: 18,
+            minZoom: 1,
+            name: 'Risques Gers (32)',
+            layername: 'risques32',
+            attribution: '<a href="http://cartorisque.prim.net/dpt/32/32_ip.html" title="Risques dans le Gers">Cartorisque</a>'
+          }), '', 20);
         
         map = L.map('map_canvas', {
           center: [47.06129129529406, 4.655869150706053],
           zoom: 6,
           zoomControl: false,
           attributionControl : false,
-          layers: [allLayers['orthophotos_ign'][0], allLayers['population'][0], allLayers['rail_ign'][0], allLayers['routes_ign'][0], allLayers['erp32'][0]]
+          layers: [allLayers['orthophotos_ign'][0], allLayers['population'][0], allLayers['rail_ign'][0], allLayers['routes_ign'][0], allLayers['erp32'][0], allLayers['risques32'][0]]
         });
         /*
         allLayers['orthophotos_ign'][0].addTo(map);
@@ -126,7 +136,8 @@
           "Population": allLayers['population'][0],
           "Réseaux routiers": allLayers['routes_ign'][0],
           "Réseaux ferrés": allLayers['rail_ign'][0],
-          "ERP du Gers (32)": allLayers['erp32'][0]
+          "ERP - Gers (32)": allLayers['erp32'][0],
+          "Risques - Gers (32)": allLayers['risques32'][0]
         };
         
         L.control.layers(baseMaps, overlayMaps).addTo(map);
