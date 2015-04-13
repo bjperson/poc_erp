@@ -15,20 +15,93 @@
   </head>
   <body>
     <nav id="top">
-      <a href="">Je-reçois-du-public.gouv.fr</a>
-      <ul>
-        <li><a href="#formulaire">Déclarer</a></li>
-        <li><a href="#map_canvas">S'authentifier / Créer un compte</a></li>
-        <li><a href="#map_canvas">Cartographie</a></li>
-        <li><a href="#map_canvas">À propos</a></li>
-      </ul>
+      <img id="logoFR" src="img/logo.jpg" />
+      <a href="" class="tban"> Je-reçois-du-public.gouv.fr</a>
+      <img id="logoIGN" src="img/logo_ign.gif" style="float:right;" />
     </nav>
-    <div id="formulaire"></div>
     <div id="map_canvas"></div>
     <script src="js/leaflet.js"></script>
     <script src="js/jquery-1.11.1.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
     <script type="text/javascript">
+    
+        function getAdresse() {
+          q = $.trim($('#q').val());
+          if(q.length > 4) {
+            $.getJSON('http://api.adresse.data.gouv.fr/search/', { q: q, limit: 10 }, function (data) {
+              if (data) {
+                console.log(data);
+              /*
+                if (typeof mark == "object") { map.removeLayer(mark); }
+                point = new L.LatLng(data.resultVarName.lat, data.resultVarName.lon);
+                mark = new L.Marker(point);
+                map.addLayer(mark);
+                map.panTo(point);
+                */
+              }
+            });
+          }
+        }
+    
+    
+        var erpLayer;
+
+        function getERP(e) {
+          $.getJSON( "getData.php", { lat: e.latlng.lat, lng: e.latlng.lng }, function(data) {
+            if(data !== 'no'){
+              if(map.hasLayer(erpLayer) == true) {
+                map.removeLayer(erpLayer);
+              }
+              if(typeof data.geojson !== 'undefined') {
+                var geojsonFeature = {
+                    "type": "Feature",
+                    "properties": {
+                      "popupContent": data.popup
+                    },
+                    "geometry": data.geojson
+                };
+                var myStyle = {
+                  "color": "#ff7800",
+                  "weight": 2,
+                  "opacity": 1,
+                  "fillOpacity": 0
+                };
+                erpLayer = new L.featureGroup();
+                erpLayer.addLayer(new L.geoJson(geojsonFeature, {
+                   style: myStyle,
+                   onEachFeature: function (feature, layer) {
+                     pop = layer.bindPopup(feature.properties.popupContent);
+                   }
+                }));
+                erpLayer.addTo(map);
+                pop.openPopup();
+              }
+            }
+          });
+        }
+    
+      function getWFS() {
+        if(scaleDenominator < 4000) {
+          console.log('launch WFS');
+        }
+      }
+      
+      function fitScreen() {
+        if($(window).outerWidth() < 545) { 
+          $('#logoFR').attr('src', 'img/logo_light.jpg');
+          $('#logoIGN').attr('src', 'img/logo_ign_light.gif');
+          $('.tban').toggleClass("tban tban2");
+          $('#top').css('height', '37px');
+        }
+        else {
+          $('#logoFR').attr('src', 'img/logo.jpg');
+          $('#logoIGN').attr('src', 'img/logo_ign.gif');
+          $('#top').css('height', '80px');
+          $('.tban2').toggleClass("tban2 tban");
+        }
+        maph=$(window).height()-$('#top').outerHeight();
+        $('#map_canvas').height(maph);
+      }
     
       function setInputText(id, text) {
         $(id).val(text);
@@ -57,12 +130,22 @@
             layername: 'ORTHOIMAGERY.ORTHOPHOTOS',
             attribution: '© <a href="http://www.geoportail.gouv.fr/">Géoportail</a>'
           }), '', 2);
+          
+        allLayers['relief_ign'] = new Array(
+          L.tileLayer('http://gpp3-wxs.ign.fr/'+ignkey+'/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ELEVATION.SLOPES&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image%2Fjpeg', {
+            minZoom: 1,
+            maxZoom: 19,
+            fn: getIgnAttributions,
+            name: 'Carte du relief',
+            layername: 'ELEVATION.SLOPES',
+            attribution: '© <a href="http://www.geoportail.gouv.fr/">Géoportail</a>'
+          }), '', 2);
         
         allLayers['erp32'] = new Array(
           L.tileLayer("http://www.ideeslibres.org/mapproxy/tiles/erp32_EPSG900913/{z}/{x}/{y}.png", {
             tms: true,
             opacity: 0.6,
-            maxZoom: 18,
+            maxZoom: 19,
             minZoom: 1,
             name: 'ERP du Gers (32)',
             layername: 'erp32',
@@ -112,13 +195,24 @@
             layername: 'risques32',
             attribution: '<a href="http://cartorisque.prim.net/dpt/32/32_ip.html" title="Risques dans le Gers">Cartorisque</a>'
           }), '', 20);
+          
+        allLayers['noms_ign'] = new Array(
+          L.tileLayer('http://gpp3-wxs.ign.fr/'+ignkey+'/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALNAMES.NAMES&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image%2Fpng', {
+            minZoom: 1,
+            maxZoom: 19,
+            opacity: 0.6,
+            fn: getIgnAttributions,
+            name: 'Dénominations géographiques',
+            layername: 'GEOGRAPHICALNAMES.NAMES',
+            attribution: '© <a href="http://www.geoportail.gouv.fr/">Géoportail</a>'
+          }), '', 2);
         
         map = L.map('map_canvas', {
           center: [47.06129129529406, 4.655869150706053],
           zoom: 6,
           zoomControl: false,
           attributionControl : false,
-          layers: [allLayers['orthophotos_ign'][0], allLayers['population'][0], allLayers['rail_ign'][0], allLayers['routes_ign'][0], allLayers['erp32'][0], allLayers['risques32'][0]]
+          layers: [allLayers['orthophotos_ign'][0], allLayers['rail_ign'][0], allLayers['routes_ign'][0], allLayers['erp32'][0], allLayers['noms_ign'][0]]
         });
         /*
         allLayers['orthophotos_ign'][0].addTo(map);
@@ -133,11 +227,13 @@
 
         var overlayMaps = {
           "Photographies aériennes": allLayers['orthophotos_ign'][0],
+          "Relief": allLayers['relief_ign'][0],
           "Population": allLayers['population'][0],
           "Réseaux routiers": allLayers['routes_ign'][0],
           "Réseaux ferrés": allLayers['rail_ign'][0],
+          "Risques - Gers (32)": allLayers['risques32'][0],
           "ERP - Gers (32)": allLayers['erp32'][0],
-          "Risques - Gers (32)": allLayers['risques32'][0]
+          "Dénominations géographiques": allLayers['noms_ign'][0],
         };
         
         L.control.layers(baseMaps, overlayMaps).addTo(map);
@@ -147,33 +243,53 @@
         var dscale = L.control({position: 'bottomright'});
         dscale.onAdd = function (map) {
           var div = L.DomUtil.create('div', 'dscale');
-          div.innerHTML = 'Echelle 1:'+getScaleDenominator();
+          div.innerHTML = 'Échelle 1:'+getScaleDenominator();
           return div;
         };
         dscale.addTo(map);
         
+        var searchbox = L.control({position: 'topleft'});
+        searchbox.onAdd = function (map) {
+          var div = L.DomUtil.create('div', 'q-container');
+          div.innerHTML = '<form name="search" id="search"><input type="text" name="q" id="q" /><input type="submit" value="ok" />';
+          return div;
+        };
+        //searchbox.addTo(map);
+        
         cscale = L.control.scale({"position": 'bottomright', "imperial": false, "updateWhenIdle": true}).addTo(map);
         czoom = L.control.zoom({"position": 'bottomright'}).addTo(map);
+        
+        $("#search").submit(function( event ) {
+          event.preventDefault();
+          getAdresse();
+        });
+        
         map.on('layeradd', function(e) {
-          if (e.layer.options.fn) {
-            e.layer.on('loading', function(e) {
-              this.options.fn(e);
-            });
+          if (e.layer.options) {
+            if (e.layer.options.fn) {
+              e.layer.on('loading', function(e) {
+                this.options.fn(e);
+              });
+            }
           }
         });
           
         map.on('layerremove', function(e) {
-          if (e.layer.options.fn) {
-            e.layer.off('load', function(e) {
-              this.options.fn(e);
-            });
+          if (e.layer.options) {
+            if (e.layer.options.fn) {
+              e.layer.off('load', function(e) {
+                this.options.fn(e);
+              });
+            }
           }
         });
           
-        map.on('viewreset', function(e) {
+        map.on('moveend', function(e) {
           setScaleDenominator();
           setHashLink();
         });
+        
+        map.on('click', getERP);
     
         stopPropag();
         loadFromHash();
@@ -228,7 +344,7 @@
       }
       
       function setScaleDenominator() {
-        $('.dscale').html('Echelle 1:'+getScaleDenominator());
+        $('.dscale').html('Échelle 1:'+getScaleDenominator());
       }
 
       ignattributions = false;
@@ -350,7 +466,13 @@
       
       ignkey = 'ul6js63hun6vaxxeso802ru5';
       
-      $(document).ready( function() { initmap(); });
+      $(document).ready( function() { 
+        initmap(); 
+        $(window).resize(function() {
+          fitScreen();
+        });
+        fitScreen();
+      });
       
     </script>
   <script type="text/javascript">

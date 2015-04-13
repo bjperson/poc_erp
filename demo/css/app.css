@@ -4,7 +4,6 @@ html, body {
   margin: 0;
   padding: 0;
   font-family: Arial, Helvetica, sans-serif;
-  background-color: gray;
 }
 #map_canvas {
   height: 500px;
@@ -49,18 +48,27 @@ input[type="submit"] {
 }
 
 #top {
-  height: 70px;
-  background: gray url("/img/logo_france.png") no-repeat scroll right 12px
+  height: 80px;
 }
-#top ul {
-  height: 100%;
-  width: 100%;
+.ban img {
+    max-width: 100%;
+    height: auto;
 }
-#top li {
-  display: inline;
-  height: 100%;
+.tban {
+  font-size: 2em;
+  line-height: 2.7em;
+  margin-left: 10px;
 }
-#top li a {
-  height: 100%;
+.tban2 {
+  font-size: 1.1em;
+  line-height: 1em;
+  margin-left: 5px;
 }
+
 .leaflet-control-layers { border-radius: 2px; }
+
+.popuptitle {
+  font-size: 1.3em;
+  font-weight: bold;
+  color:gray;
+}
