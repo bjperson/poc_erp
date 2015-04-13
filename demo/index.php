@@ -16,7 +16,7 @@
   <body>
     <nav id="top">
       <img id="logoFR" src="img/logo.jpg" />
-      <a href="" class="tban"> Je-reçois-du-public.gouv.fr</a>
+      <a href="" class="tban"> Plateforme nationale des ERP</a>
       <img id="logoIGN" src="img/logo_ign.gif" style="float:right;" />
     </nav>
     <div id="map_canvas"></div>
